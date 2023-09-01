@@ -28,6 +28,8 @@ static void bad_priv_string(const char* priv)
 
 isa_parser_t::isa_parser_t(const char* str, const char *priv)
 {
+  extension_table[EXT_ZICFILP] = true;
+
   isa_string = strtolower(str);
   const char* all_subsets = "mafdqchpv";
 

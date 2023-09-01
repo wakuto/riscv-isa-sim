@@ -279,8 +279,8 @@ bool pmpcfg_csr_t::unlogged_write(const reg_t val) noexcept {
 }
 
 // implement class mseccfg_csr_t
-mseccfg_csr_t::mseccfg_csr_t(processor_t* const proc, const reg_t addr):
-    basic_csr_t(proc, addr, 0) {
+mseccfg_csr_t::mseccfg_csr_t(processor_t* const proc, const reg_t addr, const reg_t init):
+    basic_csr_t(proc, addr, init) {
 }
 
 void mseccfg_csr_t::verify_permissions(insn_t insn, bool write) const {

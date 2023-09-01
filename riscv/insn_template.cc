@@ -2,6 +2,7 @@
 
 #include "insn_template.h"
 #include "insn_macros.h"
+#include "trap.h"
 
 #define DECODE_MACRO_USAGE_LOGGED 0
 
@@ -9,6 +10,9 @@ reg_t fast_rv32i_NAME(processor_t* p, insn_t insn, reg_t pc)
 {
   #define xlen 32
   reg_t npc = sext_xlen(pc + insn_length(OPCODE));
+  if (p->extension_enabled(EXT_ZICFILP) && STATE.elp == CFI_LP_EXPECTED && !insn.zicfilp_is_lpad()) {
+    throw trap_software_error_exception(CFI_LANDING_PAD_FAULT);
+  }
   #include "insns/NAME.h"
   trace_opcode(p, OPCODE, insn);
   #undef xlen
@@ -19,6 +23,9 @@ reg_t fast_rv64i_NAME(processor_t* p, insn_t insn, reg_t pc)
 {
   #define xlen 64
   reg_t npc = sext_xlen(pc + insn_length(OPCODE));
+  if (p->extension_enabled(EXT_ZICFILP) && STATE.elp == CFI_LP_EXPECTED && !insn.zicfilp_is_lpad()) {
+    throw trap_software_error_exception(CFI_LANDING_PAD_FAULT);
+  }
   #include "insns/NAME.h"
   trace_opcode(p, OPCODE, insn);
   #undef xlen
@@ -32,6 +39,9 @@ reg_t logged_rv32i_NAME(processor_t* p, insn_t insn, reg_t pc)
 {
   #define xlen 32
   reg_t npc = sext_xlen(pc + insn_length(OPCODE));
+  if (p->extension_enabled(EXT_ZICFILP) && STATE.elp == CFI_LP_EXPECTED && !insn.zicfilp_is_lpad()) {
+    throw trap_software_error_exception(CFI_LANDING_PAD_FAULT);
+  }
   #include "insns/NAME.h"
   trace_opcode(p, OPCODE, insn);
   #undef xlen
@@ -42,6 +52,9 @@ reg_t logged_rv64i_NAME(processor_t* p, insn_t insn, reg_t pc)
 {
   #define xlen 64
   reg_t npc = sext_xlen(pc + insn_length(OPCODE));
+  if (p->extension_enabled(EXT_ZICFILP) && STATE.elp == CFI_LP_EXPECTED && !insn.zicfilp_is_lpad()) {
+    throw trap_software_error_exception(CFI_LANDING_PAD_FAULT);
+  }
   #include "insns/NAME.h"
   trace_opcode(p, OPCODE, insn);
   #undef xlen
@@ -58,6 +71,9 @@ reg_t fast_rv32e_NAME(processor_t* p, insn_t insn, reg_t pc)
 {
   #define xlen 32
   reg_t npc = sext_xlen(pc + insn_length(OPCODE));
+  if (p->extension_enabled(EXT_ZICFILP) && STATE.elp == CFI_LP_EXPECTED && !insn.zicfilp_is_lpad()) {
+    throw trap_software_error_exception(CFI_LANDING_PAD_FAULT);
+  }
   #include "insns/NAME.h"
   trace_opcode(p, OPCODE, insn);
   #undef xlen
@@ -68,6 +84,9 @@ reg_t fast_rv64e_NAME(processor_t* p, insn_t insn, reg_t pc)
 {
   #define xlen 64
   reg_t npc = sext_xlen(pc + insn_length(OPCODE));
+  if (p->extension_enabled(EXT_ZICFILP) && STATE.elp == CFI_LP_EXPECTED && !insn.zicfilp_is_lpad()) {
+    throw trap_software_error_exception(CFI_LANDING_PAD_FAULT);
+  }
   #include "insns/NAME.h"
   trace_opcode(p, OPCODE, insn);
   #undef xlen
@@ -81,6 +100,9 @@ reg_t logged_rv32e_NAME(processor_t* p, insn_t insn, reg_t pc)
 {
   #define xlen 32
   reg_t npc = sext_xlen(pc + insn_length(OPCODE));
+  if (p->extension_enabled(EXT_ZICFILP) && STATE.elp == CFI_LP_EXPECTED && !insn.zicfilp_is_lpad()) {
+    throw trap_software_error_exception(CFI_LANDING_PAD_FAULT);
+  }
   #include "insns/NAME.h"
   trace_opcode(p, OPCODE, insn);
   #undef xlen
@@ -91,6 +113,9 @@ reg_t logged_rv64e_NAME(processor_t* p, insn_t insn, reg_t pc)
 {
   #define xlen 64
   reg_t npc = sext_xlen(pc + insn_length(OPCODE));
+  if (p->extension_enabled(EXT_ZICFILP) && STATE.elp == CFI_LP_EXPECTED && !insn.zicfilp_is_lpad()) {
+    throw trap_software_error_exception(CFI_LANDING_PAD_FAULT);
+  }
   #include "insns/NAME.h"
   trace_opcode(p, OPCODE, insn);
   #undef xlen

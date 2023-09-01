@@ -1,11 +1,15 @@
 require_extension('S');
 reg_t prev_hstatus = STATE.hstatus->read();
+bool prev_elp;
 if (STATE.v) {
   if (STATE.prv == PRV_U || get_field(prev_hstatus, HSTATUS_VTSR))
     require_novirt();
+  prev_elp = get_field(STATE.sstatus->read(), SSTATUS_SPELP);
 } else {
   require_privilege(get_field(STATE.mstatus->read(), MSTATUS_TSR) ? PRV_M : PRV_S);
+  prev_elp = get_field(STATE.mstatus->read(), MSTATUS_SPELP);
 }
+p->set_elp(prev_elp);
 reg_t next_pc = p->get_state()->sepc->read();
 set_pc_and_serialize(next_pc);
 reg_t s = STATE.sstatus->read();

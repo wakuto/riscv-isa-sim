@@ -195,6 +195,15 @@ public:
     return stack_adj_base + rvc_spimm();
   }
 
+  bool zicfilp_is_lpad() {
+#define MATCH_AUIPC 0x17
+#define MASK_AUIPC 0x7f
+    bool is_lpad = ((b & MASK_AUIPC) == MATCH_AUIPC) && (rd() == 0);
+#undef  MATCH_AUIPC
+#undef  MASK_AUIPC
+    return is_lpad;
+  }
+
 private:
   insn_bits_t b;
   uint64_t x(int lo, int len) { return (b >> lo) & ((insn_bits_t(1) << len) - 1); }

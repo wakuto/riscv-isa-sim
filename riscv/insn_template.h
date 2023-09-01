@@ -9,4 +9,5 @@
 #include "tracer.h"
 #include "p_ext_macros.h"
 #include "v_ext_macros.h"
+#include "insns/cfi_common.h"
 #include <assert.h>

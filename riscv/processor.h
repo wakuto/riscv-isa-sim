@@ -145,6 +145,8 @@ struct state_t
 
   csr_t_p jvt;
 
+  bool elp;
+
   bool debug_mode;
 
   mseccfg_csr_t_p mseccfg;
@@ -202,6 +204,7 @@ public:
 
   void set_debug(bool value);
   void set_histogram(bool value);
+  void set_elp(bool value);
   void enable_log_commits();
   bool get_log_commits_enabled() const { return log_commits_enabled; }
   void reset();

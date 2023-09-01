@@ -1,6 +1,7 @@
 // See LICENSE for license details.
 
 #include "arith.h"
+#include "isa_parser.h"
 #include "processor.h"
 #include "extension.h"
 #include "common.h"
@@ -11,6 +12,7 @@
 #include "disasm.h"
 #include "platform.h"
 #include "vector_unit.h"
+#include "insns/cfi_common.h"
 #include <cinttypes>
 #include <cmath>
 #include <cstdlib>
@@ -425,7 +427,8 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   debug_mode = false;
   single_step = STEP_NONE;
 
-  csrmap[CSR_MSECCFG] = mseccfg = std::make_shared<mseccfg_csr_t>(proc, CSR_MSECCFG);
+  reg_t mseccfg_init = (proc->extension_enabled(EXT_ZICFILP) ? MSECCFG_MLPE : 0);
+  csrmap[CSR_MSECCFG] = mseccfg = std::make_shared<mseccfg_csr_t>(proc, CSR_MSECCFG, mseccfg_init);
 
   for (int i = 0; i < max_pmp; ++i) {
     csrmap[CSR_PMPADDR0 + i] = pmpaddr[i] = std::make_shared<pmpaddr_csr_t>(proc, CSR_PMPADDR0 + i);
@@ -449,6 +452,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   csrmap[CSR_MCONFIGPTR] = std::make_shared<const_csr_t>(proc, CSR_MCONFIGPTR, 0);
   if (proc->extension_enabled_const('U')) {
     const reg_t menvcfg_mask = (proc->extension_enabled(EXT_ZICBOM) ? MENVCFG_CBCFE | MENVCFG_CBIE : 0) |
+                              (proc->extension_enabled(EXT_ZICFILP) ? MENVCFG_LPE : 0) |
                               (proc->extension_enabled(EXT_ZICBOZ) ? MENVCFG_CBZE : 0) |
                               (proc->extension_enabled(EXT_SVADU) ? MENVCFG_ADUE: 0) |
                               (proc->extension_enabled(EXT_SVPBMT) ? MENVCFG_PBMTE : 0) |
@@ -462,9 +466,11 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
       csrmap[CSR_MENVCFG] = menvcfg;
     }
     const reg_t senvcfg_mask = (proc->extension_enabled(EXT_ZICBOM) ? SENVCFG_CBCFE | SENVCFG_CBIE : 0) |
+                              (proc->extension_enabled(EXT_ZICFILP) ? SENVCFG_LPE : 0) |
                               (proc->extension_enabled(EXT_ZICBOZ) ? SENVCFG_CBZE : 0);
     csrmap[CSR_SENVCFG] = senvcfg = std::make_shared<senvcfg_csr_t>(proc, CSR_SENVCFG, senvcfg_mask, 0);
     const reg_t henvcfg_mask = (proc->extension_enabled(EXT_ZICBOM) ? HENVCFG_CBCFE | HENVCFG_CBIE : 0) |
+                              (proc->extension_enabled(EXT_ZICFILP) ? HENVCFG_LPE : 0) |
                               (proc->extension_enabled(EXT_ZICBOZ) ? HENVCFG_CBZE : 0) |
                               (proc->extension_enabled(EXT_SVADU) ? HENVCFG_ADUE: 0) |
                               (proc->extension_enabled(EXT_SVPBMT) ? HENVCFG_PBMTE : 0) |
@@ -533,6 +539,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   if (proc->extension_enabled(EXT_ZCMT))
     csrmap[CSR_JVT] = jvt = std::make_shared<jvt_csr_t>(proc, CSR_JVT, 0);
 
+  elp = false;
 
   // Smcsrind / Sscsrind
   csr_t_p miselect;
@@ -606,6 +613,12 @@ void processor_t::set_debug(bool value)
 void processor_t::set_histogram(bool value)
 {
   histogram_enabled = value;
+}
+
+void processor_t::set_elp(bool value)
+{
+  
+  state.elp = value;
 }
 
 void processor_t::enable_log_commits()
@@ -881,6 +894,10 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     s = set_field(s, MSTATUS_SPIE, get_field(s, MSTATUS_SIE));
     s = set_field(s, MSTATUS_SPP, state.prv);
     s = set_field(s, MSTATUS_SIE, 0);
+    if (extension_enabled(EXT_ZICFILP)) {
+      s = set_field(s, SSTATUS_SPELP, state.elp);
+      set_elp(CFI_NO_LP_EXPECTED);
+    }
     state.sstatus->write(s);
     set_privilege(PRV_S, true);
   } else if (state.prv <= PRV_S && bit < max_xlen && ((hsdeleg >> bit) & 1)) {
@@ -906,6 +923,12 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
       s = set_field(s, HSTATUS_GVA, t.has_gva());
       state.hstatus->write(s);
     }
+    if (extension_enabled(EXT_ZICFILP)) {
+      s = state.mstatus->read();
+      s = set_field(s, MSTATUS_SPELP, state.elp);
+      set_elp(CFI_NO_LP_EXPECTED);
+      state.mstatus->write(s);
+    }
     set_privilege(PRV_S, false);
   } else {
     // Handle the trap in M-mode
@@ -928,6 +951,10 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     s = set_field(s, MSTATUS_MIE, 0);
     s = set_field(s, MSTATUS_MPV, curr_virt);
     s = set_field(s, MSTATUS_GVA, t.has_gva());
+    if (extension_enabled(EXT_ZICFILP)) {
+      s = set_field(s, MSTATUS_MPELP, state.elp);
+      set_elp(CFI_NO_LP_EXPECTED);
+    }
     state.mstatus->write(s);
     if (state.mstatush) state.mstatush->write(s >> 32);  // log mstatush change
     set_privilege(PRV_M, false);

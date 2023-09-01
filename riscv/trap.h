@@ -40,6 +40,17 @@ class trap_t
   reg_t which;
 };
 
+class cfi_trap_t : public trap_t
+{
+ public:
+  cfi_trap_t(reg_t which, reg_t tval)
+    : trap_t(which), tval(tval) {}
+  bool has_tval() override { return true; }
+  reg_t get_tval() override { return tval; }
+ private:
+  reg_t tval;
+};
+
 class insn_trap_t : public trap_t
 {
  public:
@@ -73,6 +84,12 @@ class mem_trap_t : public trap_t
 #define DECLARE_TRAP(n, x) class trap_##x : public trap_t { \
  public: \
   trap_##x() : trap_t(n) {} \
+  std::string name() { return "trap_"#x; } \
+};
+
+#define DECLARE_CFI_TRAP(n, x) class trap_##x : public cfi_trap_t { \
+ public: \
+  trap_##x(reg_t tval) : cfi_trap_t(n, tval) {} \
   std::string name() { return "trap_"#x; } \
 };
 
@@ -115,6 +132,7 @@ DECLARE_TRAP(CAUSE_MACHINE_ECALL, machine_ecall)
 DECLARE_MEM_TRAP(CAUSE_FETCH_PAGE_FAULT, instruction_page_fault)
 DECLARE_MEM_TRAP(CAUSE_LOAD_PAGE_FAULT, load_page_fault)
 DECLARE_MEM_TRAP(CAUSE_STORE_PAGE_FAULT, store_page_fault)
+DECLARE_CFI_TRAP(CAUSE_SOFTWARE_ERROR_EXCEPTION, software_error_exception)
 DECLARE_MEM_GVA_TRAP(CAUSE_FETCH_GUEST_PAGE_FAULT, instruction_guest_page_fault)
 DECLARE_MEM_GVA_TRAP(CAUSE_LOAD_GUEST_PAGE_FAULT, load_guest_page_fault)
 DECLARE_INST_TRAP(CAUSE_VIRTUAL_INSTRUCTION, virtual_instruction)
